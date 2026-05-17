@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- CALL ME KING OF FRONTEND VIBECODER-->
+<head>
+    <meta charset="UTF-8">
+    <title>Realtime Chat Room</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; display: flex; flex-direction: column; height: 100vh; background: #eaeaea; }
+        header { background: #0084ff; color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+        #chat-box { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .msg { background: white; padding: 10px; border-radius: 8px; max-width: 60%; width: fit-content; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .msg .user { font-weight: bold; color: #555; font-size: 0.85em; margin-bottom: 4px; }
+        .msg img { max-width: 200px; display: block; margin-top: 5px; border-radius: 4px; }
+        footer { padding: 10px; background: white; display: flex; gap: 10px; align-items: center; border-top: 1px solid #ddd; }
+        input[type="text"] { flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 10px 20px; background: #0084ff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        #logoutBtn { background: #ff4d4d; }
+    </style>
+    <!-- Load Socket.io Client Library -->
+    <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+
+    <header>
+        <h2>Chat Room (<span id="user-display">...</span>)</h2>
+        <button id="logoutBtn" onclick="logout()">Logout</button>
+    </header>
+
+    <div id="chat-box"></div>
+
+    <footer>
+        <input type="text" id="messageInput" placeholder="Type a message...">
+        <input type="file" id="imageInput" accept="image/*">
+        <button onclick="sendMessage()">Send</button>
+    </footer>
+
+    <script>
+        let socket;
+        let myUsername = "";
+
+        // Verify authentication session status before initiating connection
+        async function checkAuth() {
+            const res = await fetch('/api/user');
+            const data = await res.json();
+            if (!data.loggedIn) {
+                window.location.href = '/index.html';
+            } else {
+                myUsername = data.username;
+                document.getElementById('user-display').innerText = myUsername;
+                initSocket();
+            }
+        }
+
+        function initSocket() {
+            // Secure connection by authenticating at handshake phase
+            socket = io({ auth: { username: myUsername } });
+
+            // Load and render persistent MySQL history logs
+            socket.on('chat history', (messages) => {
+                messages.forEach(appendMessage);
+            });
+
+            // Handle incoming runtime messages
+            socket.on('chat message', (data) => {
+                appendMessage(data);
+            });
+        }
+
+        function appendMessage(data) {
+            const chatBox = document.getElementById('chat-box');
+            const msgDiv = document.createElement('div');
+            msgDiv.classList.add('msg');
+            
+            let content = `<div class="user">${data.username}</div>`;
+            if (data.message) content += `<div>${data.message}</div>`;
+            if (data.image_url) content += `<img src="${data.image_url}" />`;
+            
+            msgDiv.innerHTML = content;
+            chatBox.appendChild(msgDiv);
+            chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll down
+        }
+
+        async function sendMessage() {
+            const textInput = document.getElementById('messageInput');
+            const fileInput = document.getElementById('imageInput');
+            
+            let imageUrl = null;
+
+            // If an image is selected, upload it first via REST API
+            if (fileInput.files.length > 0) {
+                const formData = new FormData();
+                formData.append('image', fileInput.files[0]);
+
+                const res = await fetch('/api/upload', { method: 'POST', body: formData });
+                const data = await res.json();
+                imageUrl = data.imageUrl;
+            }
+
+            // Send payload via socket if text or image exists
+            if (textInput.value.trim() !== "" || imageUrl) {
+                socket.emit('chat message', {
+                    message: textInput.value,
+                    image_url: imageUrl
+                });
+                
+                // Reset fields
+                textInput.value = "";
+                fileInput.value = "";
+            }
+        }
+
+        async function logout() {
+            await fetch('/api/logout', { method: 'POST' });
+            window.location.href = '/index.html';
+        }
+
+        // Initialize security check
+        checkAuth();
+    </script>
+</body>
+</html>

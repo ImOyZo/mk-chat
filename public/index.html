@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- CALL ME KING OF FRONTEND VIBECODER-->
+<head>
+    <meta charset="UTF-8">
+    <title>Chat App - Login</title>
+    <style>
+        body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #f0f2f5; margin: 0; }
+        .auth-box { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 300px; }
+        input { width: 100%; padding: 10px; margin: 10px 0; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background: #0084ff; color: white; border: none; border-radius: 4px; cursor: pointer; margin-top: 5px;}
+        button.alt { background: #42b72a; }
+    </style>
+</head>
+<body>
+    <div class="auth-box">
+        <h2 id="title">Login</h2>
+        <input type="text" id="username" placeholder="Username">
+        <input type="password" id="password" placeholder="Password">
+        <button id="mainBtn" onclick="handleAuth(true)">Login</button>
+        <button class="alt" id="toggleBtn" onclick="toggleMode()">Create Account</button>
+    </div>
+
+    <script>
+        let isLoginMode = true;
+        function toggleMode() {
+            isLoginMode = !isLoginMode;
+            document.getElementById('title').innerText = isLoginMode ? 'Login' : 'Register';
+            document.getElementById('mainBtn').innerText = isLoginMode ? 'Login' : 'Register';
+            document.getElementById('toggleBtn').innerText = isLoginMode ? 'Create Account' : 'Back to Login';
+        }
+
+        async function handleAuth() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const endpoint = isLoginMode ? '/api/login' : '/api/register';
+
+            const res = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                if (isLoginMode) {
+                    window.location.href = '/chat.html';
+                } else {
+                    alert('Registration complete! Please log in.');
+                    toggleMode();
+                }
+            } else {
+                alert(data.error || 'Something went wrong');
+            }
+        }
+    </script>
+</body>
+</html>

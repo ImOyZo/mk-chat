@@ -1,0 +1,31 @@
+name: MKChat
+services:
+    mariadb:
+        container_name: MKChat-DB
+        restart: always
+        ports:
+            - ${DB_PORT}:${DB_PORT}
+        environment:
+            - MARIADB_RANDOM_ROOT_PASSWORD=yes
+            - MARIADB_USER=${DB_USER}
+            - MARIADB_PASSWORD=${DB_PASS}
+            - MARIADB_DATABASE=${DB_NAME}
+        image: mariadb:latest
+        healthcheck:
+            test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+            start_period: 10s
+            interval: 10s
+            timeout: 5s
+            retries: 3
+
+    mk-service:
+        container_name: MKChat-Services
+        build: .
+        restart: always
+        ports:
+            - 3000:${APP_PORT}
+        depends_on:
+            mariadb:
+                condition: service_healthy
+
+        
