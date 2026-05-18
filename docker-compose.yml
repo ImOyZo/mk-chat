@@ -5,6 +5,9 @@ services:
         restart: always
         ports:
             - ${DB_PORT}:${DB_PORT}
+        volumes:
+            - ./schema/mkchatdb.sql:/docker-entrypoint-initdb.d/mkchatdb.sql
+            - mariadb-data:/var/lib/mysql
         environment:
             - MARIADB_RANDOM_ROOT_PASSWORD=yes
             - MARIADB_USER=${DB_USER}
@@ -24,8 +27,12 @@ services:
         restart: always
         ports:
             - 3000:${APP_PORT}
+        volumes:
+            - mk-service-data:/var/www/mk-services
         depends_on:
             mariadb:
                 condition: service_healthy
 
-        
+volumes:
+  mariadb-data:
+  mk-service-data:

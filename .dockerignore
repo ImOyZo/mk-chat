@@ -1,0 +1,4 @@
+# .dockerignore list
+.env.example
+node_modules
+README.md
