@@ -2,7 +2,8 @@ FROM node:22.22.3-alpine3.23
 
 WORKDIR /app
 
-COPY . .
+COPY .env .
+COPY ./app .
 
 RUN npm ci --only=production
 
